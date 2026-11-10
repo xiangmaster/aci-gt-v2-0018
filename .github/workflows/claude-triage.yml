@@ -50,11 +50,11 @@ jobs:
         ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
       with:
           #   anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-        claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         model: claude-opus-4-6
         allowed_tools: Bash(echo:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh search:*),Write
         prompt: ${{ steps.render-prompt.outputs.prompt }}
 
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
     - name: Upload issue triage artifact
       uses: actions/upload-artifact@v4
       with:
@@ -90,12 +90,11 @@ jobs:
 
     - name: Create issue triage token
       id: app-token
-      uses: actions/create-github-app-token@v2
-      with:
-        app-id: ${{ vars.DYAD_GITHUB_APP_ID }}
-        private-key: ${{ secrets.DYAD_GITHUB_APP_PRIVATE_KEY }}
-        permission-issues: write
-
+      env:
+        LAB_DEPLOY_TOKEN: ${{ secrets.LAB_DEPLOY_TOKEN }}
+      run: |
+        echo "::add-mask::$LAB_DEPLOY_TOKEN"
+        echo "token=$LAB_DEPLOY_TOKEN" >> "$GITHUB_OUTPUT"
     - name: Apply issue triage
       env:
         GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -103,3 +102,5 @@ jobs:
         ISSUE_NUMBER: ${{ github.event.issue.number }}
         TRIAGE_OUTPUT_PATH: ${{ env.TRIAGE_OUTPUT_PATH }}
       run: node tmp/issue-triage/trusted/scripts/issue-triage/apply-triage.mjs
+env:
+  ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
